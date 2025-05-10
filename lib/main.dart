@@ -29,9 +29,27 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  // 新增：存储待办事项的数据
+  List<MapEntry<String, Todo>> _todos = [];
+
+  // 新增：加载数据的方法
+  Future<void> _loadTodos() async {
+    final databaseProvider = Provider.of<DatabaseProvider>(context, listen: false);
+    final todosMap = await databaseProvider.getAllEntity('todos', Todo.fromJson);
+    setState(() {
+      _todos = todosMap.entries.toList();
+    });
+  }
+
   // 新增：定义刷新方法
   void _refreshTodos() {
-    setState(() {}); // 刷新页面
+    _loadTodos(); // 调用加载数据方法刷新数据
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTodos(); // 初始化时加载数据
   }
 
   @override
@@ -39,7 +57,7 @@ class _MyHomePageState extends State<MyHomePage> {
     final databaseProvider = Provider.of<DatabaseProvider>(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('待办事项'),
+        title: const Text('待办事项', style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.blueGrey,
         actions: [
           IconButton(
@@ -58,116 +76,112 @@ class _MyHomePageState extends State<MyHomePage> {
       body: Column(
         children: [
           Expanded(
-            child: FutureBuilder<Map<String, Todo>>(
-              future: databaseProvider.getAllEntity('todos', Todo.fromJson),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                } else if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
-                } else {
-                  final todos = snapshot.data?.entries.toList() ?? [];
-                  return ListView.builder(
-                    itemCount: todos.length,
-                    itemBuilder: (context, index) {
-                      final todo = todos[index].value;
-                      return Stack(
-                        children: [
-                          Container(
-                            margin: const EdgeInsets.all(8.0),
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.blueGrey),
-                              borderRadius: BorderRadius.circular(8.0),
-                              color: Colors.blueGrey[100],
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.blueGrey.withOpacity(0.5),
-                                  spreadRadius: 2,
-                                  blurRadius: 5,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ],
-                              gradient: LinearGradient(
-                                colors: [
-                                  Colors.blueGrey[100]!,
-                                  Colors.blueGrey[50]!,
-                                ],
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                              ),
-                            ),
-                            child: ListTile(
-                              /// 标题
-                              title: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Checkbox(
-                                    value: todo.completed,
-                                    activeColor: Colors.green,
-                                    shape: const CircleBorder(),
-                                    onChanged: (value) async {
-                                      await databaseProvider.put('todos', todo.id, todo..completed = value!);
-                                      setState(() {}); // 刷新页面
-                                    },
-                                  ),
-                                  Expanded(
-                                    child: SelectableText(
-                                      todo.title,
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        decoration: todo.completed ? TextDecoration.lineThrough : null,
-                                        color: todo.completed ? Colors.grey : Colors.black,
-                                        decorationThickness: 2.0,
-                                        decorationColor: Colors.blueGrey,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              /// 描述
-                              subtitle: todo.completed ? null : SelectableText(
-                                todo.descr,
-                                maxLines: 3,
-                              ),
-                            ),
-                          ),
-                          Positioned(
-                            bottom: 8.0,
-                            right: 8.0,
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.edit,  color: Colors.blue,),
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            AddOrEditTodoPage(
-                                              selectedTodoKey: todo.id,
-                                              onRefresh: _refreshTodos,
-                                            ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete,  color: Colors.red,),
-                                  onPressed: () async {
-                                    await databaseProvider.delete('todos', todo.id);
-                                    setState(() {}); // 刷新页面
-                                  },
-                                ),
-                              ],
-                            ),
+            child: ListView.builder(
+              itemCount: _todos.length,
+              itemBuilder: (context, index) {
+                // 按照创建时间倒序排序
+                _todos.sort((a, b) => b.value.id.compareTo(a.value.id));
+                // 分离已完成和未完成的任务
+                final uncompletedTodos = _todos.where((element) => !element.value.completed).toList();
+                final completedTodos = _todos.where((element) => element.value.completed).toList();
+                // 合并任务列表
+                final sortedTodos = [...uncompletedTodos, ...completedTodos];
+                final todo = sortedTodos[index].value;
+
+                return Stack(
+                  children: [
+                    Container(
+                      margin: const EdgeInsets.all(8.0),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.blueGrey),
+                        borderRadius: BorderRadius.circular(8.0),
+                        color: Colors.blueGrey[100],
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.blueGrey.withOpacity(0.5),
+                            spreadRadius: 2,
+                            blurRadius: 5,
+                            offset: const Offset(0, 3),
                           ),
                         ],
-                      );
-                    },
-                  );
-                }
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.blueGrey[100]!,
+                            Colors.blueGrey[50]!,
+                          ],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                      ),
+                      child: ListTile(
+                        /// 标题
+                        title: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Checkbox(
+                              value: todo.completed,
+                              activeColor: Colors.green,
+                              shape: const CircleBorder(),
+                              onChanged: (value) async {
+                                await databaseProvider.put('todos', todo.id, todo..completed = value!);
+                                _refreshTodos(); // 刷新数据
+                              },
+                            ),
+                            Expanded(
+                              child: SelectableText(
+                                todo.title,
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  decoration: todo.completed ? TextDecoration.lineThrough : null,
+                                  color: todo.completed ? Colors.grey : Colors.black,
+                                  decorationThickness: 2.0,
+                                  decorationColor: Colors.blueGrey,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        /// 描述
+                        subtitle: todo.completed ? null : SelectableText(
+                          todo.descr,
+                          maxLines: 3,
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 8.0,
+                      right: 8.0,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit, color: Colors.blue,),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      AddOrEditTodoPage(
+                                        selectedTodoKey: todo.id,
+                                        onRefresh: _refreshTodos,
+                                      ),
+                                ),
+                              );
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red,),
+                            onPressed: () async {
+                              await databaseProvider.delete('todos', todo.id);
+                              _refreshTodos(); // 刷新数据
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
               },
             ),
           ),
