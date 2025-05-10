@@ -69,11 +69,22 @@ class _AddOrEditTodoPageState extends State<AddOrEditTodoPage> {
           children: [
             TextField(
               controller: _titleController,
-              decoration: const InputDecoration(labelText: '标题'),
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                labelText: '标题',
+                helperText: '请输入待办事项的标题'
+              ),
             ),
+            const SizedBox(height: 16.0),
             TextField(
               controller: _descrController,
-              decoration: const InputDecoration(labelText: '描述'),
+              decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: '描述',
+                  helperText: '请输入待办事项的描述'
+              ),
+              keyboardType: TextInputType.multiline,
+              maxLines: 5,
             ),
             ElevatedButton(
               onPressed: () async {
