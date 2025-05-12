@@ -43,7 +43,7 @@ class _AddOrEditTodoPageState extends State<AddOrEditTodoPage> {
   }
 
   Future<void> _submitForm(DatabaseProvider databaseProvider) async {
-    if (_titleController.text.isNotEmpty && _descrController.text.isNotEmpty) {
+    if (_titleController.text.isNotEmpty) {
       final todo = Todo(
         id: widget.selectedTodoKey ?? DateTime.now().toString(),
         title: _titleController.text,
@@ -52,6 +52,14 @@ class _AddOrEditTodoPageState extends State<AddOrEditTodoPage> {
       await databaseProvider.put('todos', todo.id, todo);
       Navigator.pop(context); // 返回主页面
       widget.onRefresh?.call(); // 调用回调函数刷新主页面
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Center(
+            child: Text('请填写标题和描述', style: TextStyle(color: Colors.white)),
+          ),
+        ),
+      );
     }
   }
 
