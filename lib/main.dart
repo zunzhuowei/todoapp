@@ -87,7 +87,7 @@ class _MyHomePageState extends State<MyHomePage> {
               itemCount: _todos.length,
               itemBuilder: (context, index) {
                 // 按照创建时间倒序排序
-                _todos.sort((a, b) => b.value.id.compareTo(a.value.id));
+                _todos.sort((a, b) => b.value.createdAt.compareTo(a.value.createdAt));
                 // 分离已完成和未完成的任务
                 final uncompletedTodos = _todos.where((element) => !element.value.completed).toList();
                 final completedTodos = _todos.where((element) => element.value.completed).toList();
@@ -164,6 +164,14 @@ class _MyHomePageState extends State<MyHomePage> {
                     /// 操作按钮
                     if(_selectedIndex == index)
                       _buildOprations(todo),
+                    Positioned(
+                      top: 8.0,
+                      right: 10.0,
+                      child: Text( // 新增：显示创建时间
+                        '创建于 ${todo.createdAt.toLocal().toString().split(' ')[0]}',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    )
                   ],
                 );
               },
