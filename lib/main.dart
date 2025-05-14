@@ -83,6 +83,8 @@ class _MyHomePageState extends State<MyHomePage> {
     }
     /// 设置5分钟后再通知一次
     todo.nextNotificationTime = DateTime.now().add(Duration(minutes: 5));
+    final databaseProvider = Provider.of<DatabaseProvider>(context, listen: false);
+    await databaseProvider.put('todos', todo.id, todo);
     const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
       'todo_channel', '待办事项提醒',
       importance: Importance.max,
