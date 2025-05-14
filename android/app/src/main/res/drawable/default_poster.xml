@@ -1,0 +1,24 @@
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- 背景形状 -->
+    <item android:width="10dp" android:height="10dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#CCCCCC" />
+            <corners android:radius="1dp" />
+        </shape>
+    </item>
+
+    <!-- 播放图标 -->
+        <item
+            android:drawable="@drawable/ic_local_song"
+            android:gravity="center"
+            android:width="10dp"
+            android:height="10dp"
+            android:top="0dp"
+            android:end="0dp"
+            android:bottom="0dp"
+            android:start="0dp"/>
+
+</layer-list>
+
+

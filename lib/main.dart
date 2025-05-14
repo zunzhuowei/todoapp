@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'database_provider.dart';
 import 'todo.dart';
 import 'add_or_edit_todo_page.dart'; // 更新：引入新文件名
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,9 +32,71 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  late FlutterLocalNotificationsPlugin _notificationsPlugin;
   // 新增：存储待办事项的数据
   List<MapEntry<String, Todo>> _todos = [];
   int _selectedIndex = 0;
+  late Timer _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _initNotifications();
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      _loadTodos();
+    });
+    _loadTodos(); // 初始化时加载数据
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
+
+  /// 初始化通知插件
+  void _initNotifications() async {
+    _notificationsPlugin = FlutterLocalNotificationsPlugin();
+    
+    const AndroidInitializationSettings initializationSettingsAndroid = 
+      AndroidInitializationSettings('default_poster');
+    
+    final InitializationSettings initializationSettings = 
+      InitializationSettings(android: initializationSettingsAndroid);
+    
+    await _notificationsPlugin.initialize(initializationSettings);
+  }
+
+  /// 安排通知
+  void _scheduleNotification(Todo todo) async {
+    if(todo.completed) {
+      return;
+    }
+    if(todo.notificationTime == null) {
+      return;
+    }
+    if(!todo.notificationTime!.isBefore(DateTime.now())) {
+      return;
+    }
+    if(todo.nextNotificationTime != null && !todo.nextNotificationTime!.isBefore(DateTime.now())){
+      return;
+    }
+    /// 设置5分钟后再通知一次
+    todo.nextNotificationTime = DateTime.now().add(Duration(minutes: 5));
+    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+      'todo_channel', '待办事项提醒',
+      importance: Importance.max,
+      priority: Priority.high,
+    );
+
+    _notificationsPlugin.show(
+      todo.id.hashCode,
+      '待办事项提醒',
+      '您有待办事项 "${todo.title}" 即将到期',
+      NotificationDetails(android: androidDetails),
+    );
+
+  }
 
   // 新增：加载数据的方法
   Future<void> _loadTodos() async {
@@ -40,17 +105,13 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       _todos = todosMap.entries.toList();
     });
+    // 为所有待办安排通知
+    todosMap.forEach((key, todo) => _scheduleNotification(todo));
   }
 
   // 新增：定义刷新方法
   void _refreshTodos() {
     _loadTodos(); // 调用加载数据方法刷新数据
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _loadTodos(); // 初始化时加载数据
   }
 
   void onTap(int index) {
