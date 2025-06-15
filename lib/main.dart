@@ -60,10 +60,15 @@ class _MyHomePageState extends State<MyHomePage> {
     
     const AndroidInitializationSettings initializationSettingsAndroid = 
       AndroidInitializationSettings('default_poster');
-    
-    final InitializationSettings initializationSettings = 
-      InitializationSettings(android: initializationSettingsAndroid);
-    
+    const WindowsInitializationSettings initSettings = WindowsInitializationSettings(
+      appName: '我的待办',
+      appUserModelId: 'Com.Dexterous.FlutterLocalNotificationsExample',
+      guid: 'd49b0314-ee7a-4626-bf79-97cdb8a991bb',
+    );
+    final InitializationSettings initializationSettings = InitializationSettings(
+      android: initializationSettingsAndroid,
+      windows: initSettings,
+    );
     await _notificationsPlugin.initialize(initializationSettings);
   }
 
@@ -90,12 +95,15 @@ class _MyHomePageState extends State<MyHomePage> {
       importance: Importance.max,
       priority: Priority.high,
     );
-
+    final WindowsNotificationDetails windowsNotificationsDetails =
+    WindowsNotificationDetails(
+      subtitle: todo.descr,
+    );
     _notificationsPlugin.show(
       todo.id.hashCode,
       '待办事项提醒',
       '您有待办事项 "${todo.title}" 即将到期',
-      NotificationDetails(android: androidDetails),
+      NotificationDetails(android: androidDetails, windows: windowsNotificationsDetails),
     );
 
   }
